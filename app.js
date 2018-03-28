@@ -14,6 +14,15 @@ var budgetController = (function () {
         this.value = value;
     };
     
+    var caluclateTotal = function(type){
+        var sum = 0;
+        
+        data.allItems[type].forEach(function(cur){
+            sum += cur.value;
+        });
+        
+        data.totals[type] = sum;
+    }
    var data = {
        allItems: {
            exp: [],
@@ -23,7 +32,10 @@ var budgetController = (function () {
        totals: {
            exp:0,
            inc:0
-       }
+       },
+       
+       budget: 0,
+       percentage: -1
    } 
    
    return {
@@ -51,6 +63,37 @@ var budgetController = (function () {
            
            // return the new Item 
            return newItem;
+       },
+       
+       calculateBudget: function(){
+       
+           // calculate total income and expenses
+           
+           caluclateTotal('exp');
+           caluclateTotal('inc');
+           
+           
+           // calculate the Budget: income - expenses 
+           
+           data.budget = data.totals.inc - data.totals.exp;
+           
+           // calculate the percentage of income that  we spent
+           if(data.totals.inc > 0){
+            data.percentage = Math.round((data.totals.exp/ data.totals.inc) * 100);
+           } else {
+               data.percentage = -1;
+           }
+          
+       },
+       
+       getBudget: function(){
+           return {
+               budget: data.budget,
+               totalInc: data.totals.inc,
+               totalExp: data.totals.exp,
+               percentage: data.percentage
+               
+           }
        },
        
        testing: function(){
@@ -83,7 +126,7 @@ var UIController = (function(){
         // get the value of the description 
         description: document.querySelector(DOMstrings.inputDescription).value,
         // get the value of the input Value
-        value: document.querySelector(DOMstrings.inputValue).value
+        value: parseFloat(document.querySelector(DOMstrings.inputValue).value)
         }
     },
         
@@ -153,35 +196,46 @@ var controller = (function(budgetCtrl, UICtrl){
         if(event.keyCode === 13){
          addItem();
         }
-    })
+    });
         
-}
+};
     
-   
+   var updateBudget = function(){
+       // 1. Calculate the budget
+       
+       budgetCtrl.calculateBudget();
+       
+       // Return the Budget
+       var budget = budgetCtrl.getBudget();
+       
+       // Display the budget on the UI
+       console.log(budget);
+       
+   }
     
     var addItem = function (){
         
          // get the input data 
 
         input = UICtrl.getinput();
-
-        console.log(input);
-                
+        
+        if(input.description !== "" && !isNaN(input.value) && input.value > 0){
         // Add the item to the budget conttroller
 
         newItem = budgetCtrl.addItem(input.type, input.description, input.value)
-
-        console.log(newItem);
-
-        // clear filed
-        UICtrl.clearFields();
         //Add the item the UI
         
         UICtrl.addListItem(newItem, input.type);
+        
+        // clear filed
+        UICtrl.clearFields();
         //Calculate the budget
+
+        updateBudget();
         
         //Display the budget on the UI 
-        
+        }
+                 
     }
     
    return {
